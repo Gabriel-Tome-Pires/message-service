@@ -1,0 +1,31 @@
+services:
+  message_service:
+    build: .
+    container_name: message-services
+    ports:
+      - "8082:8080"
+    depends_on:
+      - postgresmessage
+    networks:
+      - e-commerce-API
+  postgresmessage:
+    image: postgres:15
+    container_name: message_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1783
+      POSTGRES_DB: mydb
+    networks:
+      - e-commerce-API
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
+
+networks:
+  e-commerce-API:
+    external: true
