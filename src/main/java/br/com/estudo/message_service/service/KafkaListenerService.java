@@ -1,10 +1,14 @@
 package br.com.estudo.message_service.service;
 
+import br.com.estudo.message_service.DTO.DeliveryDTO;
+import br.com.estudo.message_service.DTO.OrderDTO;
+import br.com.estudo.message_service.DTO.UserDTO;
 import br.com.estudo.message_service.model.Message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.TopicPartition;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,18 +22,19 @@ public class KafkaListenerService {
     private final UserClient userClient;
     private final OrderClient orderClient;
 
+    private static final Logger logger= LoggerFactory.getLogger(KafkaListenerService.class);
+
     @KafkaListener(topics = "user-created", groupId = "message_consumer")
     private void consumeUserCreated(String userJson){
         try{
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> messageMap = mapper.readValue(userJson, Map.class);
+            UserDTO user = mapper.readValue(userJson, UserDTO.class);
 
-            System.out.println(messageMap);
-
-            Number idNum = (Number) messageMap.get("id");
-            Long id = idNum.longValue();
-            String name = (String) messageMap.get("name");
-            String email = (String) messageMap.get("email");
+            logger.debug(user.toString());
+;
+            Long id = user.getId();
+            String name = user.getName();
+            String email = user.getEmail();
 
             String text = emailSenderService.sendUserCreatedEmail(email, name);
             Message message =new Message(id, LocalDateTime.now(), text);
@@ -37,7 +42,7 @@ public class KafkaListenerService {
             messageService.createMessage(message);
 
         }catch (Exception e){
-            System.out.println("A error happened reading a Json Value "+e.getMessage());
+            logger.error("A error happened reading a Json Value "+e.getMessage());
         }
     }
 
@@ -45,20 +50,19 @@ public class KafkaListenerService {
     private void consumeUpdateDelivery(String deliveryJson){
         try{
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> deliveryMap = mapper.readValue(deliveryJson, Map.class);
+            DeliveryDTO delivery = mapper.readValue(deliveryJson, DeliveryDTO.class);
 
-            System.out.println(deliveryMap);
+            logger.debug(delivery.toString());
 
-            Number orderIdNum = (Number) deliveryMap.get("orderId");
-            Long orderId = orderIdNum.longValue();
+            Long orderId = delivery.getOrderId();
             String orderJson= orderClient.getOrderById(orderId);
-            Map<String, Object> orderMap = mapper.readValue(orderJson, Map.class);
-            Number idNum = (Number) orderMap.get("userId");
-            Long id = idNum.longValue();
+            OrderDTO order = mapper.readValue(orderJson, OrderDTO.class);
+
+            Long id = order.getUserId();
             String userJson= userClient.getUserById(id);
-            Map<String, Object> userMap = mapper.readValue(userJson, Map.class);
-            String email = (String) userMap.get("email");
-            String name  = (String) userMap.get("name");
+            UserDTO user = mapper.readValue(userJson, UserDTO.class);
+            String email = user.getEmail();
+            String name  = user.getName();
 
             String text = emailSenderService.sendDeliveryUpdateEmail(email, name);
             Message message =new Message(id, LocalDateTime.now(), text);
@@ -66,7 +70,7 @@ public class KafkaListenerService {
             messageService.createMessage(message);
 
         }catch (Exception e){
-            System.out.println("A error happened reading a Json Value "+e.getMessage());
+            logger.error("A error happened reading a Json Value "+e.getMessage());
         }
     }
 
@@ -76,16 +80,16 @@ public class KafkaListenerService {
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> orderMap = mapper.readValue(orderJson, Map.class);
 
-            System.out.println(orderMap);
+            logger.debug(orderMap.toString());
 
             Number idUserNum = (Number) orderMap.get("userId");
             Long userId = idUserNum.longValue();
 
-            String user=userClient.getUserById(userId);
-            Map<String, Object> userMap = mapper.readValue(user, Map.class);
+            String userJson=userClient.getUserById(userId);
+            UserDTO user = mapper.readValue(userJson, UserDTO.class);
 
-            String email = (String) userMap.get("email");
-            String name = (String) userMap.get("name");
+            String email = user.getEmail();
+            String name = user.getName();
 
             String text = emailSenderService.sendOrderPaidEmail(email, name);
             Message message =new Message(userId, LocalDateTime.now(), text);
@@ -93,7 +97,7 @@ public class KafkaListenerService {
             messageService.createMessage(message);
 
         }catch (Exception e){
-            System.out.println("A error happened reading a Json Value "+e.getMessage());
+            logger.error("A error happened reading a Json Value "+e.getMessage());
         }
     }
 }

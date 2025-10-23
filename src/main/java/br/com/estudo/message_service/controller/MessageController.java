@@ -13,10 +13,9 @@ import java.util.List;
 @RequestMapping("/message")
 @AllArgsConstructor
 public class MessageController {
-    //TODO Kafka aparentemente não está recebendo todas as mensagens
     MessageService messageService;
 
-    @DeleteMapping("/delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<Message> deleteMessage(@PathVariable Long id) {
         messageService.deleteMessage(id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
