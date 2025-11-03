@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: message-db
+  namespace: e-commerce
+spec:
+  selector:
+    matchLabels:
+      app: message-db
+  template:
+    metadata:
+      labels:
+        app: message-db
+    spec:
+      containers:
+        - name: message-db
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "1783"
+            - name: POSTGRES_DB
+              value: "message"
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-storage
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: message-pvc
